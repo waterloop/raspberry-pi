@@ -6,5 +6,5 @@ include_directories(lib/include)
 
 add_library(canbus STATIC lib/canbus/canbus.cpp)
 
-add_executable(main main.cpp)
+add_executable(main src/main.cpp)
 target_link_libraries(main canbus)
