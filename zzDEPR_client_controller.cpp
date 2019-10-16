@@ -89,8 +89,17 @@ int main(int argc, char *argv[])
     //AF_INET get ipaddress
     //SOCK_STREAM defines sockfd as a TCP Socket
 
+
     if (sockfd < 0)//some more error catching
         error("ERROR opening socket");
+
+
+    // Configure keepalive
+    if (getsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
+        close(s);
+        error("getsockopt() call failed");
+    }
+    
     server = gethostbyname(argv[1]);
 
     if (server == NULL)//even more error catching
