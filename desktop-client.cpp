@@ -7,10 +7,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
-#include <strings.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-
 void error(char *msg)
 {
     perror(msg);
@@ -55,7 +54,7 @@ int main(int argc, char *argv[])
     printf("Please enter the message: ");
     bzero(buffer,256);
     fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
+   n = write(sockfd,buffer,strlen(buffer));
     if (n < 0) 
          error("ERROR writing to socket");
     if (n < 0) 
