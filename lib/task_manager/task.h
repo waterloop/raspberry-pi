@@ -3,9 +3,6 @@
 
 #include <thread>
 #include <vector>
-#include <chrono>
-#include <stdint.h>
-#include <sstream>
 
 #include "queue.h"
 #include "message.h"
@@ -22,18 +19,15 @@ namespace wlp {
 
 		void send_msg(uint32_t dst, message *msg);
 
-		message *recv_msg();
+		std::unique_ptr<message> recv_msg(uint64_t timeout = 0);
 
-		void log_flush(uint8_t log_level);
+		uint32_t get_id();
 
 		virtual void start() = 0;
 
-	protected:
-		std::ostringstream log_buf;
-
 	private:
-		task(const task &t);
-		task &operator=(const task &t);
+		//task(const task &t); // deleted 
+		//task &operator=(const task &t);
 
 		uint32_t id = -1;
 		bool running = false;

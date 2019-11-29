@@ -24,11 +24,18 @@ namespace wlp {
 		bool empty() {
 			return size() == 0;
 		}
-		T pop() {
+		T pop(uint64_t timeout = 0) {
 			std::unique_lock<std::mutex> lock(mut);
-			cond.wait(lock, [this] {
+			auto pred = [this] {
 				return !deq.empty();
-			});
+			};
+			if(timeout != 0) {
+				if(!cond.wait_for(lock, std::chrono::duration<uint64_t, std::micro>(timeout), pred)) {
+					return nullptr;
+				}
+			} else {
+				cond.wait(lock, pred);
+			}
 			T elem = deq.back();
 			deq.pop_back();
 			return elem;

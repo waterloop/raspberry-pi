@@ -1,92 +1,72 @@
-#include <stdint.h>
+#include <cstdint>
+#include <cstring>
+#include <unordered_map>
+#include <memory>
+#include <task_manager/message.h>
+#include "packet_decoder.h"
 
-const uint32_t IMU_1_ACCEL_ID[] = {1024, 1026};
-const uint32_t IMU_1_GYRO_ID[] = {1025, 1027};
-const uint32_t TEMP_1_ID[] = {1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037};
-const uint32_t TEMP_2_ID[] = {1038, 1039};
-const uint32_t PHOTO_2_ID[] = {1040, 1041};
-const uint32_t HALL_1_ID[] = {1042, 1043, 1044, 1045, 1046, 1047};
-const uint32_t PIEZO_1_ID[] = {1048, 1049};
+static std::unordered_map<uint32_t, sensor_id> sensor_map;
+static bool sensor_map_populated;
 
-const uint32_t *SENSORS[] = {IMU_1_ACCEL_ID, IMU_1_GYRO_ID, TEMP_1_ID, TEMP_2_ID, PHOTO_2_ID, HALL_1_ID, PIEZO_1_ID};
-
-// map between can_id -> sensor, instance
-
-struct sensor {
-    
-    
-};
-
-struct sensor_data {
-    uint32_t can_id;
-    
-    uint8_t sensor_type;
-    uint8_t sensor_inst;
-
-    uint8_t raw_data[8];
-    uint8_t raw_data_len;
-
-    virtual void decode();
-};
-
-struct sensor_mcp6050_accel_decoder : public sensor_data {
-    double x, y, z;
-
-    void decode() {
-        // read raw_data
-        // write into x, y, z
-        x = (raw_data[0] << 8) | raw_data[1];
-        y = (raw_data[2] << 8) | raw_data[3];
-        z = (raw_data[4] << 8) | raw_data[5];
+static void build_sensor_map() {
+    for(uint8_t type = 0; type < SENSOR_NUM_TYPES; ++type) {
+        for(uint8_t inst = 0; inst < SENSOR_NUM_INST[type]; ++inst) {
+            sensor_id sensor = {
+                .can_id = SENSOR_CAN_ID[type][inst],
+                .sensor_type = type,
+                .sensor_inst = inst,
+            };
+            sensor_map[sensor.can_id] = sensor;
+        }
     }
+    sensor_map_populated = true;
 };
 
-struct sensor_mcp6050_gyro_decoder : public sensor_data {
-    double x, y, z;
-
-    void decode() {
-        x = (raw_data[0] << 8) | raw_data[1];
-        y = (raw_data[2] << 8) | raw_data[3];
-        z = (raw_data[4] << 8) | raw_data[5];
+static std::shared_ptr<sensor_data> create_sensor_data(uint8_t sensor_type) {
+    sensor_data *data;
+    switch(sensor_type) {
+        case SENSOR_TYPE_IMU1ACCEL:
+            data = new sensor_imu1accel_data();
+            break;
+        case SENSOR_TYPE_IMU1GYRO:
+            data = new sensor_imu1gyro_data();
+            break;
+        case SENSOR_TYPE_TEMP1:
+            data = new sensor_temp1_data();
+            break;
+        case SENSOR_TYPE_TEMP2:
+            data = new sensor_temp2_data();
+            break;
+        case SENSOR_TYPE_PHOTO2:
+            data = new sensor_photo2_data();
+            break;
+        case SENSOR_TYPE_HALL1:
+            data = new sensor_hall1_data();
+            break;
+        case SENSOR_TYPE_PIEZO1:
+            data = new sensor_piezo1_data();
+            break;
     }
-};
+    return std::shared_ptr<sensor_data>(data);
+}
 
-struct sensor_tmp411_decoder : public sensor_data {
-    double t;
+std::shared_ptr<sensor_data> decode_data(uint32_t can_id, uint8_t *buffer, uint8_t len) {
+    if(!sensor_map_populated)
+        build_sensor_map();
 
-    void decode() {
-        t = (raw_data[0] << 8) | raw_data[1];
+    auto it = sensor_map.find(can_id);
+    if(it == sensor_map.end()) {
+        return nullptr;
     }
-};
+    sensor_id &id = it->second;
+    std::shared_ptr<sensor_data> data = create_sensor_data(id.sensor_type);
 
-struct sensor_temp2_decoder : public sensor_data {
-    double t;
+    data->sensor = id;
 
-    void decode() {
-        t = (raw_data[0] << 8) | raw_data[1];
-    }
-};
+    memcpy(data->raw_data, buffer, len);
+    data->raw_data_len = len;
 
-struct sensor_photo2_decoder : public sensor_data {
-    double p;
+    data->decode();
 
-    void decode() {
-        p = (raw_data[0] << 24) | (raw_data[1] << 16) | (raw_data[2] << 8) | raw_data[3];
-    }
-};
-
-struct sensor_hall1_decoder : public sensor_data {
-    double s;
-
-    void decode() {
-        s = (raw_data[0] << 8) | raw_data[1];
-    }
-};
-
-struct sensor_piezo1_decoder : public sensor_data {
-    double v;
-
-    void decode() {
-        v = (raw_data[0] << 8) | raw_data[1];
-    }
+    return data;
 }

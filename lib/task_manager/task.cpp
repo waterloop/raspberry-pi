@@ -1,6 +1,9 @@
 #include "task_manager.h"
 #include "task.h"
 
+#include <chrono>
+#include <stdint.h>
+
 using namespace wlp;
 
 task::task() {
@@ -16,12 +19,11 @@ void task::send_msg(uint32_t dst, message *msg) {
 	serv->send_msg(dst, id, msg);
 }
 
-message *task::recv_msg() {
-	return msg_queue.pop();
+std::unique_ptr<message> task::recv_msg(uint64_t timeout) {
+	return std::unique_ptr<message>(msg_queue.pop(timeout));
 }
 
-void task::log_flush(uint8_t log_level) {
-	serv->log(id, log_level, log_buf.str());
-	log_buf.str("");
+uint32_t task::get_id() {
+	return id;
 }
 
