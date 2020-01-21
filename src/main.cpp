@@ -11,6 +11,8 @@
 using namespace wlp;
 
 class printTask : public task {
+public:
+	printTask() : task(2, "printTask") {}
 	void start() {
 		while (true) {
 			message *msg = new message(5);
@@ -20,22 +22,31 @@ class printTask : public task {
 	}
 };
 
-// Mock out the behaviour of the CAN stuff 🥴🤭😳
+// Mock out the behaviour of the CAN stuff 
 class canMock : public task {
+public:
+	canMock() : task(50, "canMock") {}
 	void start() override {
 		int i = 0;
 
 		while (true) {
-			std::shared_ptr<sensor_data> sample(new sensor_imu1accel_data());
-			message *msg = new sensor_data_message(sample);
-			send_msg(0, msg);
-			sleep(1);
+			auto nice = new sensor_imu1accel_data();
+			nice->x = i;
+			nice->y = i;
+			nice->z = i;
 
+			std::shared_ptr<sensor_data> sample(nice);
+			message *msg = new sensor_data_message(sample);
+			send_msg(TASK_TCP, msg);
+			i ++;
+			sleep(1);
 		}
 	}
 };
 
 class checkTask : public task {
+public:
+	checkTask() : task(0, "checkTask") {}
 	void start() {	
 		while(true) {
 			std::unique_ptr<message> m = recv_msg();
@@ -58,16 +69,24 @@ int main() {
 	s.start_all();
 	s.wait_all();
 	*/
-	task_manager s{2};
+	task_manager s{100};
 	tcp tcpTingz {};
 	canMock canManz {};
-	s.add_task(0, &tcpTingz);
-	s.add_task(1, &canManz);
-	printTask printyBoi;
+	s.add_task(&tcpTingz);
+	s.add_task(&canManz);
+	//printTask printyBoi;
 
+	//for testing
+	sensor_imu1accel_data *sampleData = new sensor_imu1accel_data();
+    sampleData->x = 1;
+    sampleData->y = 2;
+    sampleData->z = 14;
+
+    std::shared_ptr<sensor_data> sample = std::shared_ptr<sensor_data>(sampleData);
+    //tcpTingz->recv(sample);
 
 	s.start_all();
-	s.wait_all(); // 💀
+	s.wait_all(); //
 
 
 	return 0;

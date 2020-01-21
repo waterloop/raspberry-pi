@@ -20,7 +20,7 @@ struct sensor_data {
 
 
 
-wlp::tcp::tcp() {
+wlp::tcp::tcp() : task(TASK_TCP, "tcp") {
     printf("CTOR CALLED\n");
     //this->begin();
 }
@@ -28,13 +28,18 @@ wlp::tcp::tcp() {
 wlp::tcp::~tcp() {}
 
 void wlp::tcp::error(const char *msg) {
+    printf("[TCP] ERROR: %s\n", msg);
     exit(EXIT_FAILURE);
+}
+
+void wlp::tcp::trace(const char *msg) {
+    printf("[TCP] TRACE: %s\n", msg);
 }
 
 void wlp::tcp::start() {
     int n = 0;
     // will store values read from the socket into a cleared buffer
-    bzero(buffer,256);
+    bzero(buffer,2048);
     
     // The internet addresses of server (rpi) and client (desktop)
     struct sockaddr_in rpi_addr, desktop_addr;
@@ -42,7 +47,7 @@ void wlp::tcp::start() {
     //if (argc < 2) { // no arguments were passed in
     //    error("No port number provided");
     //}
-    portno = 9999; // store the port number as an int
+    portno = 1234; // store the port number as an int
 
     // AF_INET indicates that the address domain will be 
     //     the internet domain. SOCK_STREAM and 0 ensure that
@@ -73,18 +78,21 @@ void wlp::tcp::start() {
         error("Could not bind socket to rpi address. Is it already in use?");
     }
     
+    trace("Bound socket to rpi address");
+    
+    
     // the process will not wait for a connection up until more than 5 connections are put on hold
     listen(sockfd, 5);
-
+    trace("Connection established");
     // Now that we passed the call a connection occured!!!
     //     We will need a NEW file descriptor now that the socket is accepting
     clilen = sizeof(desktop_addr);
     newsockfd = accept(sockfd, (struct sockaddr *) &desktop_addr, (socklen_t *) &clilen);
     if (newsockfd < 0) error("ERROR on accept");
 
-    bzero(buffer,256);
+    bzero(buffer,2048);
     while (1) {
-        std::unique_ptr<message> dataFromMessage = wlp::task::recv_msg(100);
+        std::unique_ptr<message> dataFromMessage = wlp::task::recv_msg();
         if (dataFromMessage->msg_type != MSG_SENSOR_DATA) continue;
         // WARNING: nice will be deleted as dataFromMessage soon as it goes out of scope. So after this iteration of while loop finishes, nice is deleted
         sensor_data_message *nice = static_cast<sensor_data_message *>(dataFromMessage.get());
@@ -220,13 +228,11 @@ std::string dataToJsonString(std::shared_ptr<sensor_data> &decoded_data_unique) 
 
 bool wlp::tcp::forwardToDesktop(std::shared_ptr<sensor_data> data) {
     std::string dataJsonString = dataToJsonString(data);
-    bzero(buffer,256);
+    
+    bzero(buffer,2048);
     sprintf(buffer, "%s", dataJsonString.c_str());
     printf("RECV CALLED%s\n", buffer);
-    while (1) {
-        n = write(newsockfd, buffer, 255);
-        sleep(5);
-    }
+    n = write(newsockfd, buffer, 255);
 
     if (n < 0) error("ERROR writing to socket");
 

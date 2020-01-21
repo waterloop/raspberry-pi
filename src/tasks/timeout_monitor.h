@@ -48,6 +48,8 @@ namespace wlp {
         std::unordered_map<uint32_t, monitor_info> monitors;
         std::set<std::pair<uint64_t, uint32_t>> timeout;
         void start();
+    public:
+        task_monitor() : task(TASK_MONITOR, "monitor") {}
     };
 }
 

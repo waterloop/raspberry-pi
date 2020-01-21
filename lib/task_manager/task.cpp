@@ -1,12 +1,9 @@
 #include "task_manager.h"
 #include "task.h"
 
-#include <chrono>
-#include <stdint.h>
-
 using namespace wlp;
 
-task::task() {
+task::task(uint32_t id, const char *const name) : id(id), name(name) {
 }
 
 task::~task() {
@@ -22,8 +19,3 @@ void task::send_msg(uint32_t dst, message *msg) {
 std::unique_ptr<message> task::recv_msg(uint64_t timeout) {
 	return std::unique_ptr<message>(msg_queue.pop(timeout));
 }
-
-uint32_t task::get_id() {
-	return id;
-}
-

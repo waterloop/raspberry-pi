@@ -9,6 +9,8 @@
 #include <set>
 #include <functional>
 
+#include <pthread.h>
+
 using namespace wlp;
 
 // Create task_manager with a maximum of `ntasks`. All task IDs should fall within [0, ntasks - 1]
@@ -25,6 +27,7 @@ void task_manager::start_all() {
 		task *t = *it;
 		if(t != nullptr && !t->running) {
 			t->thread = new std::thread(std::bind(&task_manager::call_start, this, t));
+			pthread_setname_np(t->thread->native_handle(), t->name);
 			t->running = true;
 		}
 	}
@@ -32,11 +35,11 @@ void task_manager::start_all() {
 
 // Starts up a task
 void task_manager::call_start(task *t) {
-	fprintf(stderr, "[task_manager] task[%d] running\n", t->id);
+	fprintf(stderr, "[task_manager] %s(%u) running\n", t->name, t->id);
 	t->running = true;
 	t->start();
 	t->running = false;
-	fprintf(stderr, "[task_manager] task[%d] exited\n", t->id);
+	fprintf(stderr, "[task_manager] %s(%u) exited\n", t->name, t->id);
 
 	std::unique_lock<std::mutex> lock(mut);
 	task_list[t->id] = nullptr;
@@ -64,12 +67,11 @@ void task_manager::send_msg(uint32_t dst, uint32_t src, message *msg) {
 // Adds `t` to the task list, with the specified `id`
 // All task must be added before starting the tasks
 // Returns true on successful, false otherwise
-bool task_manager::add_task(uint32_t id, task *t) {
-	if(id >= num_tasks || task_list[id] != nullptr || started) {
+bool task_manager::add_task(task *t) {
+	if(t->id >= num_tasks || task_list[t->id] != nullptr || started) {
 		return false;
 	}
-	t->id = id;
 	t->serv = this;
-	task_list[id] = t;
+	task_list[t->id] = t;
 	return true;
 }

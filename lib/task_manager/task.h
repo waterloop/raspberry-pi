@@ -14,22 +14,22 @@ namespace wlp {
 
 	public:
 
-		task();
+		task(uint32_t id, const char *const name);
 		virtual ~task();
 
 		void send_msg(uint32_t dst, message *msg);
 
 		std::unique_ptr<message> recv_msg(uint64_t timeout = 0);
 
-		uint32_t get_id();
-
 		virtual void start() = 0;
+
+		const uint32_t id;
+		const char *const name;
 
 	private:
 		//task(const task &t); // deleted 
 		//task &operator=(const task &t);
 
-		uint32_t id = -1;
 		bool running = false;
 		task_manager *serv = nullptr;
 		queue<message *> msg_queue;

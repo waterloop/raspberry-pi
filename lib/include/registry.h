@@ -1,7 +1,9 @@
 #ifndef REGISTRY_H
 #define REGISTRY_H
 
+#define TASK_LOGGER 0
 #define TASK_MONITOR 1
+#define TASK_TCP 2
 
 #define MSG_LOG 0
 #define MSG_TIMEOUT_CONFIGURE 1

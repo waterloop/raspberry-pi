@@ -14,7 +14,7 @@ namespace wlp {
 
 		task_manager(uint32_t ntasks);
 
-		bool add_task(uint32_t id, task *t);
+		bool add_task(task *t);
 
 		void start_all();
 		void wait_all();

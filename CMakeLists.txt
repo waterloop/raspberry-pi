@@ -4,6 +4,8 @@ set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/arm-toolchain.cmake)
 
 project(pod-server)
 
+set(CMAKE_CXX_FLAGS "-Wno-psabi")
+
 include_directories(lib/include lib)
 
 add_library(canbus STATIC lib/canbus/canbus.cpp)

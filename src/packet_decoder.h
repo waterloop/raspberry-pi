@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <stdint.h>
-#include <registry.h>
+#include "../lib/include/registry.h"
 
 static const uint32_t IMU_1_ACCEL_CAN_ID[] = {1024, 1026};
 static const uint32_t IMU_1_GYRO_CAN_ID[] = {1025, 1027};

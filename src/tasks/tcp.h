@@ -34,6 +34,7 @@ public:
 
     // TO BE UPDATED TO PROPER LOGGING
     void error(const char *msg);
+	void trace(const char *msg);
 
 	// Initialize
 	void start() override;
@@ -53,7 +54,7 @@ private:
 
 	void canbus_errno(const char *msg);
 
-	char buffer[256];
+	char buffer[2048];
 	int sockfd, newsockfd, portno, clilen, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
