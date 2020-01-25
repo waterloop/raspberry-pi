@@ -39,10 +39,13 @@ private:
 
 	void canbus_errno(const char *msg);
 
+    void canbus::log_msg(const char* msg, const int& type);
+
 	bool check_id(uint32_t id, bool id_ext);
 
 	const char *ifname;
 	int can_sockfd;
+    auto file_logger;
 };
 }
 

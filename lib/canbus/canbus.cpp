@@ -12,11 +12,18 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
+
+#include <ctime>
+
 #include "canbus.h"
 
 using namespace wlp;
 
-canbus::canbus(const char *iface) : ifname(iface), can_sockfd(-1) {}
+canbus::canbus(const char *iface) : ifname(iface), can_sockfd(-1) {
+    this->file_logger = spdlog::basic_logger_mt("canbus_logger", "logs/logs.txt");
+}
 canbus::~canbus() {
 	if (can_sockfd != -1)
 		close(can_sockfd);
@@ -34,6 +41,7 @@ void canbus::canbus_log(const char *msg) {
 void canbus::canbus_errno(const char *msg) {
 	if (DEBUG_LEVEL >= CANBUS_ERR) {
 		printf("[canbus] [ERROR] [syscall] %s: %s\n", msg, strerror(errno));
+        this->log_msg(msg, 1);
 	}
 }
 
@@ -184,4 +192,21 @@ bool canbus::check_id(uint32_t id, bool id_ext) {
 	} else {
 		return !(id & ~CAN_SFF_MASK);
 	}
+}
+
+void canbus::log_msg(const char* msg, const int& type) {
+    const time_t* time = new time(0);
+    const char* time_str = ctime(&time);
+    switch(type) {
+        case 0: {
+            this->file_logger->info("{} - {}", time_str, msg)
+            break;
+        }
+        case 1: {
+            this->file_logger->error("{} - {}", time_str, msg)
+            break;
+        }        
+    }
+    delete time; 
+    delete time_str;
 }
