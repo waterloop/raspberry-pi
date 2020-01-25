@@ -1,5 +1,6 @@
 #include "tcp.h"
 #include <iostream>
+#include <fstream>
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
@@ -90,12 +91,33 @@ void wlp::tcp::start() {
     newsockfd = accept(sockfd, (struct sockaddr *) &desktop_addr, (socklen_t *) &clilen);
     if (newsockfd < 0) error("ERROR on accept");
 
+    /*filename logs.csv
+
+    */
+
+    std::ofstream data_log;
+
     bzero(buffer,2048);
     while (1) {
         std::unique_ptr<message> dataFromMessage = wlp::task::recv_msg();
         if (dataFromMessage->msg_type != MSG_SENSOR_DATA) continue;
+
         // WARNING: nice will be deleted as dataFromMessage soon as it goes out of scope. So after this iteration of while loop finishes, nice is deleted
-        sensor_data_message *nice = static_cast<sensor_data_message *>(dataFromMessage.get());
+        sensor_data_message *nice = static_cast<sensor_data_message*>(dataFromMessage.get());
+        
+        std::string raw_data_string;
+        for (int a : nice->data->raw_data) {
+            raw_data_string.append(std::to_string(a));
+        }
+
+        data_log.open("sensor_data.csv");
+        data_log << std::to_string(dataFromMessage->timestamp) << ',';
+        data_log << std::to_string(nice->data->sensor.sensor_type) << ',';
+        data_log << std::to_string(nice->data->sensor.sensor_inst) << ',';
+        data_log << std::to_string(nice->data->sensor.can_id) << ',';
+        data_log << raw_data_string << ',';
+        data_log.close();
+
         forwardToDesktop(nice->data);
     }
 
